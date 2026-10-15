@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "imdb-popular-movie-telegram",
+  "name": "IMDb热门电影推送到Telegram",
+  "version": "1.0.2",
+  "description": "读取IMDb热门电影榜单，并通过TgtoDrive已配置的Telegram通知机器人发送摘要。",
+  "author": "OpenAI",
+  "entry": "plugin.py",
+  "timeout": 120,
+  "inputs": [
+    {"name":"count","label":"推送数量","type":"number","required":true,"default":10,"min":1,"max":50,"step":1},
+    {"name":"provider","label":"榜单提供者","type":"text","required":true,"default":"tmdb"},
+    {"name":"region","label":"地区参数","type":"text","required":false,"default":""},
+    {"name":"force_refresh","label":"强制刷新榜单","type":"boolean","required":false,"default":false},
+    {"name":"send_message","label":"发送Telegram","type":"boolean","required":false,"default":true},
+    {"name":"test_message","label":"测试消息模式","type":"boolean","required":false,"default":false}
+  ]
+}
