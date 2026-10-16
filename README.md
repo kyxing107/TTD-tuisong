@@ -1,46 +1,29 @@
-# IMDb热门电影推送到 Telegram
+# 热门影视榜单推送到 Telegram
 
-## 功能
+插件采用静态勾选界面：榜单提供者当前为 TMDB；榜单内容包括 TMDB热门电影、TMDB热门电视剧和TMDB趋势。点击“查询/推送”会读取当前勾选的榜单，查询 Emby 入库状态，并发送到 TgtoDrive 已配置的 Telegram 通知机器人。
 
-每次运行使用 OpenAPI Bearer Token 调用 TgtoDrive 原始 `/api/...` 路径：`GET /api/media/rankings/{provider}` 查询榜单，读取 `GET /api/notify-bots` 的现有机器人配置；随后使用返回的机器人 Token 和管理员目标调用 Telegram Bot API `sendMessage` 发送榜单正文。Bearer Token 只用于 TgtoDrive API，不会转发给 Telegram。
+榜单提供者和榜单内容均为静态选项，不显示动态分类。
 
-TgtoDrive 的榜单接口要求使用受支持的流媒体 provider；默认值为 `tmdb`。如果手工填写的 provider 返回 `INVALID_STREAMING_PROVIDER`，插件会调用 `/api/media/providers` 自动发现来源并重试。榜单响应会递归识别常见的 `items`、`results`、`movies`、`records`、`subjects` 等结构。
-
-插件只执行一次任务；需要定时推送时，在 TgtoDrive 的“实用工具 → 我的插件 → 定时执行”中为本插件创建 cron 计划，例如 `0 9 * * *`。
-
-## 配置
-
-优先使用容器环境变量：
-
-- `TGTO_OPENAPI_BASE_URL`：例如 `http://127.0.0.1:12366`
-- `TGTO_OPENAPI_TOKEN`：在 TgtoDrive OpenAPI 页面创建的 Bearer Token
-
-如果插件进程没有继承环境变量，推荐在插件的持久数据目录（运行上下文中的 `data_dir`）创建 `openapi_token.txt`，文件内容只放 Token（前后空白会自动去除）。例如：
-
-```text
-YOUR_OPENAPI_TOKEN
-```
-
-服务地址默认使用 `TGTO_OPENAPI_BASE_URL`；未设置时插件使用 `http://127.0.0.1:12366`。如果端口不同，再创建 `openapi.json`：
+当前 OpenAPI 只明确声明 `/api/media/rankings/{provider}` 的 `force`、`media_type`、`page`、`region` 参数，没有声明 TMDB 趋势的真实路由值。因此 TMDB 电影/电视剧使用对应的 `media_type`；TMDB 趋势需要填写已核实的映射，不会偷偷改用其他来源。映射示例：
 
 ```json
-{"base_url":"http://127.0.0.1:12366","token":"YOUR_OPENAPI_TOKEN"}
+{
+  "trending": {"provider": "已核实的来源ID", "query": {"media_type": "movie"}}
+}
 ```
 
-`openapi_token.txt` 和 `openapi.json` 只由插件读取，不会写入插件代码、日志或运行结果。不要把真实 Token 放进 `plugin.py`、`plugin.json` 或 ZIP 包。
+映射可粘贴到表单“分类接口映射（可选JSON）”，或保存为持久数据目录的 `ranking_routes.json`。`query` 只能使用 OpenAPI 声明的四个参数。没有映射时会明确提示缺少接口映射。
 
-Token 文件可放在 `data_dir/openapi_token.txt`（推荐，更新后保留），也可放在插件目录的 `openapi_token.txt`。
+配置：优先使用 `TGTO_OPENAPI_BASE_URL` 与 `TGTO_OPENAPI_TOKEN`；也可在 `data_dir/openapi_token.txt` 或 `data_dir/openapi.json` 中保存。Token 只用于 Bearer 调用 TgtoDrive，不会发送给 Telegram。
 
-表单参数：`count`（1-50，默认 10）、`provider`（默认 `tmdb`）、`region`（可选）、`force_refresh`、`send_message`。
+主要路径：`GET /api/media/rankings/{provider}`、`POST /api/media/emby/cards`、`GET /api/notify-bots`，以及 Telegram Bot API `sendMessage`。Emby 返回 `found` 显示“已入库”，其他状态和查询失败统一显示“未入库”。
 
-界面中的“发送测试消息”按钮会调用同一入口，通过 Telegram Bot API 发送固定测试文本，不查询榜单。
+Telegram 正文使用方案一的清爽分组格式：顶部显示上海时区当天日期，分组标题和片名加粗，状态/年份/评分使用斜体，并在多个榜单之间加入分隔线；插件结果面板仍返回纯文本。
 
-Telegram 目标使用 TgtoDrive 已保存的通知机器人配置，不在插件中保存 Token。
+表单提供四种 Telegram 消息样式，可随时切换：方案一清爽分组型、方案二紧凑榜单型、方案三信息卡片型、方案四兼容纯文本型。默认使用方案一。
 
-## 导入
+界面采用分区布局：榜单选择、查询参数、推送设置。数量和页码在查询参数区并排显示，便于快速配置。
 
-直接导入 `plugin.py`，或导入同目录生成的 `imdb-popular-movie-telegram.zip`。
+定时推送由 TgtoDrive“实用工具 → 我的插件 → 定时执行”配置，例如每天 `0 9 * * *`。插件本身不创建后台线程或计划任务。
 
-## 验证
-
-先将 `send_message=false` 运行，检查返回的榜单文本；再启用发送。无效 Token、接口非 2xx、空榜单和通知发送异常都会在结果中明确显示。
+导入 `imdb-popular-movie-telegram.zip`，或直接导入 `plugin.py`。`send_message=false` 可先预览消息。

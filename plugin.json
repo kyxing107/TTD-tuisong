@@ -1,18 +1,187 @@
 {
   "schema_version": 1,
   "id": "imdb-popular-movie-telegram",
-  "name": "IMDb热门电影推送到Telegram",
-  "version": "1.0.2",
-  "description": "读取IMDb热门电影榜单，并通过TgtoDrive已配置的Telegram通知机器人发送摘要。",
+  "name": "热门影视榜单推送到Telegram",
+  "version": "1.3.3",
+  "description": "使用勾选的榜单提供者和分类读取热门影视，查询Emby状态后推送Telegram。",
   "author": "OpenAI",
   "entry": "plugin.py",
-  "timeout": 120,
+  "timeout": 600,
   "inputs": [
-    {"name":"count","label":"推送数量","type":"number","required":true,"default":10,"min":1,"max":50,"step":1},
-    {"name":"provider","label":"榜单提供者","type":"text","required":true,"default":"tmdb"},
-    {"name":"region","label":"地区参数","type":"text","required":false,"default":""},
-    {"name":"force_refresh","label":"强制刷新榜单","type":"boolean","required":false,"default":false},
-    {"name":"send_message","label":"发送Telegram","type":"boolean","required":false,"default":true},
-    {"name":"test_message","label":"测试消息模式","type":"boolean","required":false,"default":false}
-  ]
+    {
+      "name": "count",
+      "label": "推送数量",
+      "type": "number",
+      "required": true,
+      "default": 10,
+      "min": 1,
+      "max": 50,
+      "step": 1
+    },
+    {
+      "name": "providers",
+      "label": "榜单提供者",
+      "type": "multiselect",
+      "required": false,
+      "default": [],
+      "options": [
+        {
+          "label": "TMDB",
+          "value": "tmdb"
+        }
+      ]
+    },
+    {
+      "name": "contents",
+      "label": "榜单内容（可多选）",
+      "type": "multiselect",
+      "required": false,
+      "default": [],
+      "options": [
+        {
+          "label": "TMDB热门电影",
+          "value": "movie"
+        },
+        {
+          "label": "TMDB热门电视剧",
+          "value": "tv"
+        },
+        {
+          "label": "TMDB趋势",
+          "value": "trending"
+        }
+      ]
+    },
+    {
+      "name": "page",
+      "label": "榜单页码",
+      "type": "number",
+      "required": true,
+      "default": 1,
+      "min": 1,
+      "max": 9999,
+      "step": 1,
+      "help": "读取所选榜单的页码。"
+    },
+    {
+      "name": "region",
+      "label": "地区参数",
+      "type": "text",
+      "required": false,
+      "default": "",
+      "placeholder": "留空使用服务默认值"
+    },
+    {
+      "name": "force_refresh",
+      "label": "强制刷新榜单",
+      "type": "boolean",
+      "required": false,
+      "default": false
+    },
+    {
+      "name": "send_message",
+      "label": "发送Telegram",
+      "type": "boolean",
+      "required": false,
+      "default": true
+    },
+    {
+      "name": "message_style",
+      "label": "Telegram消息样式",
+      "type": "select",
+      "required": true,
+      "default": "clean",
+      "options": [
+        {
+          "label": "方案一：清爽分组型",
+          "value": "clean"
+        },
+        {
+          "label": "方案二：紧凑榜单型",
+          "value": "compact"
+        },
+        {
+          "label": "方案三：信息卡片型",
+          "value": "card"
+        },
+        {
+          "label": "方案四：兼容纯文本型",
+          "value": "plain"
+        }
+      ]
+    }
+  ],
+  "ui": {
+    "width": "wide",
+    "layout": "stack",
+    "components": [
+      {
+        "type": "heading",
+        "text": "热门影视榜单推送"
+      },
+      {
+        "type": "heading",
+        "text": "榜单选择"
+      },
+      {
+        "type": "field",
+        "name": "providers"
+      },
+      {
+        "type": "field",
+        "name": "contents"
+      },
+      {
+        "type": "heading",
+        "text": "查询参数"
+      },
+      {
+        "type": "grid",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "name": "count"
+          },
+          {
+            "type": "field",
+            "name": "page"
+          }
+        ]
+      },
+      {
+        "type": "field",
+        "name": "region"
+      },
+      {
+        "type": "field",
+        "name": "force_refresh"
+      },
+      {
+        "type": "heading",
+        "text": "推送设置"
+      },
+      {
+        "type": "field",
+        "name": "send_message"
+      },
+      {
+        "type": "field",
+        "name": "message_style"
+      },
+      {
+        "type": "button",
+        "label": "查询/推送",
+        "action": "run",
+        "params": {}
+      },
+      {
+        "type": "alert",
+        "text": "Telegram目标使用TgtoDrive当前已配置的通知机器人和管理员目标。",
+        "style": {
+          "tone": "muted"
+        }
+      }
+    ]
+  }
 }
